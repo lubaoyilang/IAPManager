@@ -6,6 +6,18 @@
 //  Copyright (c) 2012年 willonboy.tk. All rights reserved.
 //
 
+
+    //向苹果验证IAP的地址有两个, 一个是测试账号用的验证地址, 另一个是实际发布后的验证地址
+#if DEBUG
+    #define VAILDATING_RECEIPTS_URL @"https://sandbox.itunes.apple.com/verifyReceipt"
+#else
+    #define VAILDATING_RECEIPTS_URL @"https://buy.itunes.apple.com/verifyReceipt"
+#endif
+
+
+
+
+
 #import "IAPManager.h"
 
 @interface IAPManager()
