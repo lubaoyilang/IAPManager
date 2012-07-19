@@ -3,7 +3,7 @@
 //  EvilCartoon
 //
 //  Created by willonboy zhang on 12-7-19.
-//  Copyright (c) 2012年 imohoo. All rights reserved.
+//  Copyright (c) 2012年 willonboy.tk. All rights reserved.
 //
 
 #import "IAPManager.h"
