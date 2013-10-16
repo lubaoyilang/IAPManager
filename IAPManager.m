@@ -1,6 +1,6 @@
 //
 //  IAPManager.m
-//  EvilCartoon
+//
 //
 //  Created by willonboy zhang on 12-7-19.
 //  Copyright (c) 2012年 willonboy.tk. All rights reserved.
@@ -21,8 +21,6 @@
 #import "IAPManager.h"
 
 @interface IAPManager()
-
-- (void)addStoreObserver;
 
     //向苹果app store确认是否真正购买过
 - (VerifyReceiptResult)verifyReceipt:(SKPaymentTransaction *)transaction;
@@ -45,9 +43,7 @@ static IAPManager *_instance = nil;
 {
     self = [super init];
     if (self) 
-    {
-        [self addStoreObserver];
-    }
+    {}
     
     return self;
 }
@@ -91,11 +87,6 @@ static IAPManager *_instance = nil;
 + (BOOL)canMakePayments;
 {
     return [SKPaymentQueue canMakePayments];
-}
-
-- (void)addStoreObserver;
-{
-    [[SKPaymentQueue defaultQueue] addTransactionObserver:self];
 }
 
     //恢复店内付
@@ -172,6 +163,7 @@ static IAPManager *_instance = nil;
                 }
                 
                 [[SKPaymentQueue defaultQueue] finishTransaction:transaction];
+                [[SKPaymentQueue defaultQueue] removeTransactionObserver:self];
             }
                 break;
                 
@@ -194,12 +186,13 @@ static IAPManager *_instance = nil;
                 }
                 
                 [[SKPaymentQueue defaultQueue] finishTransaction:transaction];
+                [[SKPaymentQueue defaultQueue] removeTransactionObserver:self];
             }
                 break;
                 
             case SKPaymentTransactionStateRestored:
             {
-				NSLog(@"购买过的商品");
+				NSLog(@"恢复购买过的商品");
                 [[SKPaymentQueue defaultQueue] finishTransaction:transaction];
             }
                 break;
@@ -213,8 +206,8 @@ static IAPManager *_instance = nil;
     // Sent when an error is encountered while adding transactions from the user's purchase history back to the queue.
 - (void)paymentQueue:(SKPaymentQueue *)queue restoreCompletedTransactionsFailedWithError:(NSError *)error
 {
-    
-    NSLog(@"paymentQueue - %@", error);
+    [[SKPaymentQueue defaultQueue] removeTransactionObserver:self];
+    NSLog(@"店内付恢失败: %@", error);
     
     if(_delegate && delegateClass == object_getClass(_delegate) && [_delegate respondsToSelector:@selector(restoreBatchTransactions:)])
     {
@@ -225,8 +218,9 @@ static IAPManager *_instance = nil;
     // Sent when all transactions from the user's purchase history have successfully been added back to the queue.
 - (void)paymentQueueRestoreCompletedTransactionsFinished:(SKPaymentQueue *)queue
 {
-    NSLog(@"待店内付恢复项: %i", queue.transactions.count);
-    
+    NSLog(@"店内付恢成功项: %i", queue.transactions.count);
+
+    [[SKPaymentQueue defaultQueue] removeTransactionObserver:self];
     if (queue.transactions.count > 0)
     {
         NSMutableArray *tranArr = [[NSMutableArray alloc] init];
@@ -274,7 +268,8 @@ static IAPManager *_instance = nil;
         NSLog(@"desp:%@",pro.localizedDescription);
         NSLog(@"price:%@",pro.price);
         NSLog(@"indefifier:%@",pro.productIdentifier);
-            
+        
+        [[SKPaymentQueue defaultQueue] addTransactionObserver:self];
             //添加进购买队列
         [[SKPaymentQueue defaultQueue] addPayment:[SKPayment paymentWithProductIdentifier:pro.productIdentifier]];
     }

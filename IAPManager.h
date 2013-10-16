@@ -1,6 +1,6 @@
 //
 //  IAPManager.h
-//  EvilCartoon
+//
 //
 //  Created by willonboy zhang on 12-7-19.
 //  Copyright (c) 2012年 willonboy.tk. All rights reserved.
@@ -22,7 +22,6 @@ typedef enum
 
 - (void)completeTransaction:(SKPaymentTransaction *)transaction;
 - (void)failedTransaction:(SKPaymentTransaction *)transaction;
-    //- (void)restoreTransaction:(SKPaymentTransaction *)transaction;
 - (void)cancelTransaction: (SKPaymentTransaction *)transaction;
 - (void)restoreBatchTransactions:(NSArray *)transactions;
 - (void)downloadIAPDataFailed;
