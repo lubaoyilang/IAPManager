@@ -271,7 +271,7 @@ static IAPManager *_instance = nil;
         
         [[SKPaymentQueue defaultQueue] addTransactionObserver:self];
             //添加进购买队列
-        [[SKPaymentQueue defaultQueue] addPayment:[SKPayment paymentWithProductIdentifier:pro.productIdentifier]];
+        [[SKPaymentQueue defaultQueue] addPayment:[SKPayment paymentWithProduct:pro]];
     }
 }
 
