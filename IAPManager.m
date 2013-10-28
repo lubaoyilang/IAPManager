@@ -6,7 +6,7 @@
 //  Copyright (c) 2012年 willonboy.tk. All rights reserved.
 //
 
-
+    //验证IAP: POST提交json数据{"receipt-data":"base64过的SKPaymentTransaction.transactionReceipt"}, 注意HTTP.Header中添加Content-Type:application/json
     //向苹果验证IAP的地址有两个, 一个是测试账号用的验证地址, 另一个是实际发布后的验证地址
 #if DEBUG
     #define VAILDATING_RECEIPTS_URL @"https://sandbox.itunes.apple.com/verifyReceipt"
@@ -19,6 +19,17 @@
 
 
 #import "IAPManager.h"
+
+@implementation WTSKProductsRequest
+
+- (void)dealloc
+{
+    self.productIdentifier = nil;
+    [super dealloc];
+}
+
+@end
+
 
 @interface IAPManager()
 
@@ -108,8 +119,9 @@ static IAPManager *_instance = nil;
         return;
     } 
     
-    SKProductsRequest *request = [[[SKProductsRequest alloc] initWithProductIdentifiers:[NSSet setWithObject:identifier]] autorelease];
+    WTSKProductsRequest *request = [[[WTSKProductsRequest alloc] initWithProductIdentifiers:[NSSet setWithObject:identifier]] autorelease];
     request.delegate = self;
+    request.productIdentifier = identifier;
     [request start];
 }
 
@@ -156,9 +168,10 @@ static IAPManager *_instance = nil;
                 }  
                 else
                 {
-                    if(_delegate && delegateClass == object_getClass(_delegate) && [_delegate respondsToSelector:@selector(failedTransaction:)])
+                    if(_delegate && delegateClass == object_getClass(_delegate) && [_delegate respondsToSelector:@selector(failedTransaction:error:)])
                     {
-                        [_delegate failedTransaction:transaction];
+                        NSError *err = [NSError errorWithDomain:@"purchase.error" code:-1 userInfo:[NSDictionary dictionaryWithObject:@"verify purchase failed" forKey:@"msg"]];
+                        [_delegate failedTransaction:transaction.payment.productIdentifier error:err];
                     }
                 }
                 
@@ -172,16 +185,16 @@ static IAPManager *_instance = nil;
                 NSLog(@"购买失败");
                 if(transaction.error.code != SKErrorPaymentCancelled)
                 {
-                    if(_delegate && delegateClass == object_getClass(_delegate) && [_delegate respondsToSelector:@selector(failedTransaction:)])
+                    if(_delegate && delegateClass == object_getClass(_delegate) && [_delegate respondsToSelector:@selector(failedTransaction:error:)])
                     {
-                        [_delegate failedTransaction:transaction];
+                        [_delegate failedTransaction:transaction.payment.productIdentifier error:transaction.error];
                     }
                 }
                 else
                 {
                     if(_delegate && delegateClass == object_getClass(_delegate) && [_delegate respondsToSelector:@selector(cancelTransaction:)])
                     {
-                        [_delegate cancelTransaction:transaction];
+                        [_delegate cancelTransaction:transaction.payment.productIdentifier];
                     }
                 }
                 
@@ -209,9 +222,9 @@ static IAPManager *_instance = nil;
     [[SKPaymentQueue defaultQueue] removeTransactionObserver:self];
     NSLog(@"店内付恢失败: %@", error);
     
-    if(_delegate && delegateClass == object_getClass(_delegate) && [_delegate respondsToSelector:@selector(restoreBatchTransactions:)])
+    if(_delegate && delegateClass == object_getClass(_delegate) && [_delegate respondsToSelector:@selector(restoreBatchTransactions:error:)])
     {
-        [_delegate restoreBatchTransactions:nil];
+        [_delegate restoreBatchTransactions:nil error:error];
     }
 }
 
@@ -223,19 +236,11 @@ static IAPManager *_instance = nil;
     [[SKPaymentQueue defaultQueue] removeTransactionObserver:self];
     if (queue.transactions.count > 0)
     {
-        NSMutableArray *tranArr = [[NSMutableArray alloc] init];
-        for (SKPaymentTransaction *transaction in queue.transactions)
+        if(_delegate && delegateClass == object_getClass(_delegate) && [_delegate respondsToSelector:@selector(restoreBatchTransactions:error:)])
         {
-            [tranArr addObject:transaction.payment.productIdentifier];
+            [_delegate restoreBatchTransactions:queue.transactions error:nil];
         }
-        
-        if(_delegate && delegateClass == object_getClass(_delegate) && [_delegate respondsToSelector:@selector(restoreBatchTransactions:)])
-        {
-            [_delegate restoreBatchTransactions:tranArr];
-        }
-        
-        [tranArr release];
-    } 
+    }
 }
 
 
@@ -251,9 +256,14 @@ static IAPManager *_instance = nil;
         //请求交易数据失败
     if([iapProducts count] == 0)
     {
-        if(_delegate && delegateClass == object_getClass(_delegate) && [_delegate respondsToSelector:@selector(downloadIAPDataFailed)])
+        NSString *productIdentifier = nil;
+        if ([request isKindOfClass:[WTSKProductsRequest class]])
         {
-            [_delegate downloadIAPDataFailed];
+            productIdentifier = ((WTSKProductsRequest *)request).productIdentifier;
+        }
+        if(_delegate && delegateClass == object_getClass(_delegate) && [_delegate respondsToSelector:@selector(downloadIAPDataFailed:)])
+        {
+            [_delegate downloadIAPDataFailed:productIdentifier];
         }
         
         return;
@@ -274,6 +284,20 @@ static IAPManager *_instance = nil;
         [[SKPaymentQueue defaultQueue] addPayment:[SKPayment paymentWithProduct:pro]];
     }
 }
+
+- (void)request:(SKRequest *)request didFailWithError:(NSError *)error
+{
+    NSString *productIdentifier = nil;
+    if ([request isKindOfClass:[WTSKProductsRequest class]])
+    {
+        productIdentifier = ((WTSKProductsRequest *)request).productIdentifier;
+    }
+    if(_delegate && delegateClass == object_getClass(_delegate) && [_delegate respondsToSelector:@selector(downloadIAPDataFailed:)])
+    {
+        [_delegate downloadIAPDataFailed:productIdentifier];
+    }
+}
+
 
 @end
 

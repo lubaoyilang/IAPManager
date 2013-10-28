@@ -21,10 +21,11 @@ typedef enum
 @protocol IAPManagerDelegate <NSObject>
 
 - (void)completeTransaction:(SKPaymentTransaction *)transaction;
-- (void)failedTransaction:(SKPaymentTransaction *)transaction;
-- (void)cancelTransaction: (SKPaymentTransaction *)transaction;
-- (void)restoreBatchTransactions:(NSArray *)transactions;
-- (void)downloadIAPDataFailed;
+- (void)failedTransaction:(NSString *)productIdentifier error:(NSError *)err;
+- (void)cancelTransaction:(NSString *)productIdentifier;
+    // SKPaymentTransaction array
+- (void)restoreBatchTransactions:(NSArray *)transactions error:(NSError *)err;
+- (void)downloadIAPDataFailed:(NSString *)productIdentifier;
 
     //验证购买的IAP产品收据 向苹果app store确认是否真正购买过 (注意: 该验证必须是同步的验证, 必须及时返回验证结果)
 - (VerifyReceiptResult)verifyReceipt:(SKPaymentTransaction *)transaction;
@@ -49,3 +50,14 @@ typedef enum
 
 
 @end
+
+
+
+
+@interface WTSKProductsRequest : SKProductsRequest
+
+@property(nonatomic, retain) NSString *productIdentifier;
+
+@end
+
+
